@@ -1,36 +1,8 @@
-import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CreateRoomForm } from "@/components/create-room-form";
-import type { Room } from "@/lib/types/database";
 
-async function getRooms() {
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from("rooms")
-    .select("*")
-    .order("created_at", { ascending: false })
-    .limit(10);
-
-  return (data || []) as Room[];
-}
-
-const statusLabels = {
-  collecting: "意見募集中",
-  voting: "投票中",
-  closed: "締切済み",
-};
-
-const statusColors = {
-  collecting: "bg-blue-500",
-  voting: "bg-green-500",
-  closed: "bg-gray-500",
-};
-
-export default async function Home() {
-  const rooms = await getRooms();
-
+export default function Home() {
   return (
     <main className="min-h-screen bg-background">
       <div className="container max-w-4xl mx-auto py-12 px-4">
@@ -49,7 +21,7 @@ export default async function Home() {
           <CardHeader>
             <CardTitle>新しい投票ルームを作成</CardTitle>
             <CardDescription>
-              議題を設定して、意見を集めましょう
+              議題を設定して、URLを共有しましょう
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -57,54 +29,19 @@ export default async function Home() {
           </CardContent>
         </Card>
 
-        {/* Recent Rooms */}
-        <div className="space-y-4">
-          <h2 className="text-2xl font-bold">最近のルーム</h2>
-
-          {rooms.length === 0 ? (
-            <Card>
-              <CardContent className="p-8 text-center text-muted-foreground">
-                まだルームがありません。最初のルームを作成してみましょう！
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid gap-4">
-              {rooms.map((room) => (
-                <Link key={room.id} href={`/${room.id}`}>
-                  <Card className="hover:border-primary transition-colors cursor-pointer">
-                    <CardHeader>
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1">
-                          <CardTitle className="text-lg">{room.title}</CardTitle>
-                          <CardDescription className="mt-1">
-                            作成: {new Date(room.created_at).toLocaleDateString("ja-JP")}
-                          </CardDescription>
-                        </div>
-                        <Badge className={statusColors[room.status]}>
-                          {statusLabels[room.status]}
-                        </Badge>
-                      </div>
-                    </CardHeader>
-                  </Card>
-                </Link>
-              ))}
-            </div>
-          )}
-        </div>
-
         {/* How it Works */}
         <Card className="mt-12">
           <CardHeader>
             <CardTitle>TOHYOの使い方</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
+            <div className="space-y-3">
               <div className="flex items-start gap-3">
                 <Badge className="bg-blue-500 min-w-8 justify-center">1</Badge>
                 <div>
-                  <h3 className="font-semibold">意見を集める</h3>
+                  <h3 className="font-semibold">ルームを作成してURLを共有</h3>
                   <p className="text-sm text-muted-foreground">
-                    ルームを作成し、参加者から自由に意見を投稿してもらいます
+                    議題を入力してルームを作成し、発行されたURLをLINEなどで共有します
                   </p>
                 </div>
               </div>
@@ -112,9 +49,9 @@ export default async function Home() {
               <div className="flex items-start gap-3">
                 <Badge className="bg-green-500 min-w-8 justify-center">2</Badge>
                 <div>
-                  <h3 className="font-semibold">AIが選択肢を生成</h3>
+                  <h3 className="font-semibold">みんなで意見を投稿</h3>
                   <p className="text-sm text-muted-foreground">
-                    集まった意見をAIが分析し、5つの具体的な選択肢を自動生成します
+                    URLにアクセスした参加者が自由に意見を投稿します
                   </p>
                 </div>
               </div>
@@ -122,9 +59,19 @@ export default async function Home() {
               <div className="flex items-start gap-3">
                 <Badge className="bg-purple-500 min-w-8 justify-center">3</Badge>
                 <div>
-                  <h3 className="font-semibold">投票する</h3>
+                  <h3 className="font-semibold">AIが選択肢を生成</h3>
                   <p className="text-sm text-muted-foreground">
-                    生成された選択肢に投票し、集団の意思を可視化します
+                    主催者が意見を締め切ると、AIが5つの具体的な選択肢を自動生成します
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <Badge className="bg-orange-500 min-w-8 justify-center">4</Badge>
+                <div>
+                  <h3 className="font-semibold">投票して結果を確認</h3>
+                  <p className="text-sm text-muted-foreground">
+                    生成された選択肢に投票し、最も支持された案を決定します
                   </p>
                 </div>
               </div>
