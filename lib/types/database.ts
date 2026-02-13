@@ -6,6 +6,7 @@ export interface Room {
   id: string;
   title: string;
   status: RoomStatus;
+  admin_token: string;
   created_at: string;
   updated_at: string;
 }

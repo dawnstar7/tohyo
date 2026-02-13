@@ -11,8 +11,9 @@ export function CreateRoomForm() {
   const [title, setTitle] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [createdRoomUrl, setCreatedRoomUrl] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
+  const [createdRoom, setCreatedRoom] = useState<{ participantUrl: string; adminUrl: string } | null>(null);
+  const [copiedParticipant, setCopiedParticipant] = useState(false);
+  const [copiedAdmin, setCopiedAdmin] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,8 +22,9 @@ export function CreateRoomForm() {
 
     try {
       const room = await createRoomAction(title);
-      const url = `${window.location.origin}/${room.id}`;
-      setCreatedRoomUrl(url);
+      const participantUrl = `${window.location.origin}/${room.id}`;
+      const adminUrl = `${window.location.origin}/${room.id}/admin?token=${room.admin_token}`;
+      setCreatedRoom({ participantUrl, adminUrl });
       setTitle("");
     } catch (err) {
       setError(err instanceof Error ? err.message : "エラーが発生しました");
@@ -31,24 +33,37 @@ export function CreateRoomForm() {
     }
   };
 
-  const handleCopy = async () => {
-    if (!createdRoomUrl) return;
+  const handleCopyParticipant = async () => {
+    if (!createdRoom) return;
 
     try {
-      await navigator.clipboard.writeText(createdRoomUrl);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      await navigator.clipboard.writeText(createdRoom.participantUrl);
+      setCopiedParticipant(true);
+      setTimeout(() => setCopiedParticipant(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy:", err);
+    }
+  };
+
+  const handleCopyAdmin = async () => {
+    if (!createdRoom) return;
+
+    try {
+      await navigator.clipboard.writeText(createdRoom.adminUrl);
+      setCopiedAdmin(true);
+      setTimeout(() => setCopiedAdmin(false), 2000);
     } catch (err) {
       console.error("Failed to copy:", err);
     }
   };
 
   const handleNewRoom = () => {
-    setCreatedRoomUrl(null);
-    setCopied(false);
+    setCreatedRoom(null);
+    setCopiedParticipant(false);
+    setCopiedAdmin(false);
   };
 
-  if (createdRoomUrl) {
+  if (createdRoom) {
     return (
       <div className="space-y-4">
         <Card className="border-green-500 bg-green-50">
@@ -58,38 +73,76 @@ export function CreateRoomForm() {
               <div className="flex-1">
                 <h3 className="font-semibold text-green-900">ルームを作成しました！</h3>
                 <p className="text-sm text-green-700 mt-1">
-                  以下のURLをLINEやメールで共有してください
+                  2つのURLが発行されました
                 </p>
               </div>
             </div>
 
-            <div className="flex gap-2">
-              <Input
-                value={createdRoomUrl}
-                readOnly
-                className="flex-1 bg-white"
-              />
-              <Button
-                onClick={handleCopy}
-                variant="outline"
-                size="icon"
-                className="shrink-0"
-              >
-                {copied ? (
-                  <Check className="h-4 w-4 text-green-600" />
-                ) : (
-                  <Copy className="h-4 w-4" />
-                )}
-              </Button>
+            {/* Admin URL */}
+            <div className="space-y-2 p-3 bg-orange-50 rounded-lg border border-orange-200">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-semibold text-orange-900">🔑 管理者用URL（あなた専用）</span>
+              </div>
+              <p className="text-xs text-orange-700">
+                投票の進行管理ができます。このURLは誰にも共有しないでください
+              </p>
+              <div className="flex gap-2">
+                <Input
+                  value={createdRoom.adminUrl}
+                  readOnly
+                  className="flex-1 bg-white text-sm"
+                />
+                <Button
+                  onClick={handleCopyAdmin}
+                  variant="outline"
+                  size="icon"
+                  className="shrink-0"
+                >
+                  {copiedAdmin ? (
+                    <Check className="h-4 w-4 text-green-600" />
+                  ) : (
+                    <Copy className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+            </div>
+
+            {/* Participant URL */}
+            <div className="space-y-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-semibold text-blue-900">👥 参加者用URL（共有用）</span>
+              </div>
+              <p className="text-xs text-blue-700">
+                このURLをLINEなどで共有して、みんなに意見を投稿してもらいましょう
+              </p>
+              <div className="flex gap-2">
+                <Input
+                  value={createdRoom.participantUrl}
+                  readOnly
+                  className="flex-1 bg-white text-sm"
+                />
+                <Button
+                  onClick={handleCopyParticipant}
+                  variant="outline"
+                  size="icon"
+                  className="shrink-0"
+                >
+                  {copiedParticipant ? (
+                    <Check className="h-4 w-4 text-green-600" />
+                  ) : (
+                    <Copy className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
             </div>
 
             <div className="flex gap-2">
               <Button
-                onClick={() => window.open(createdRoomUrl, "_blank")}
-                className="flex-1"
+                onClick={() => window.open(createdRoom.adminUrl, "_blank")}
+                className="flex-1 bg-orange-600 hover:bg-orange-700"
               >
                 <ExternalLink className="mr-2 h-4 w-4" />
-                ルームを開く
+                管理画面を開く
               </Button>
               <Button
                 onClick={handleNewRoom}

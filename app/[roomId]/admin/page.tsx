@@ -1,29 +1,30 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { EntryForm } from "@/components/entry-form";
 import { EntryList } from "@/components/entry-list";
 import { VotingPanel } from "@/components/voting-panel";
 import { AdminControls } from "@/components/admin-controls";
 import { generateUserIdHash } from "@/lib/utils/hash";
 import type { Room, Entry, Poll, Vote } from "@/lib/types/database";
+import { AlertCircle } from "lucide-react";
 
 interface PollWithVotes extends Poll {
   vote_count: number;
 }
 
-async function getRoomData(roomId: string) {
+async function getRoomData(roomId: string, token: string) {
   const supabase = await createClient();
 
-  // Get room
+  // Get room and verify admin token
   const { data: room, error: roomError } = await supabase
     .from("rooms")
     .select("*")
     .eq("id", roomId)
+    .eq("admin_token", token)
     .single();
 
-  if (roomError) return null;
+  if (roomError || !room) return null;
 
   // Get entries
   const { data: entries } = await supabase
@@ -99,13 +100,21 @@ const statusColors = {
   closed: "bg-gray-500",
 };
 
-export default async function RoomPage({
+export default async function AdminPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ roomId: string }>;
+  searchParams: Promise<{ token?: string }>;
 }) {
   const { roomId } = await params;
-  const data = await getRoomData(roomId);
+  const { token } = await searchParams;
+
+  if (!token) {
+    redirect(`/${roomId}`);
+  }
+
+  const data = await getRoomData(roomId, token);
 
   if (!data) {
     notFound();
@@ -122,15 +131,21 @@ export default async function RoomPage({
   return (
     <div className="min-h-screen bg-background">
       <div className="container max-w-4xl mx-auto py-8 px-4">
-        {/* Room Header */}
-        <Card className="mb-6">
+        {/* Admin Header */}
+        <Card className="mb-6 border-2 border-orange-500 bg-orange-50">
           <CardHeader>
             <div className="flex items-start justify-between gap-4">
-              <div>
-                <CardTitle className="text-2xl">{room.title}</CardTitle>
-                <CardDescription className="mt-2">
-                  作成日: {new Date(room.created_at).toLocaleString("ja-JP")}
-                </CardDescription>
+              <div className="flex items-start gap-3">
+                <span className="text-2xl">🔑</span>
+                <div>
+                  <CardTitle className="text-2xl text-orange-900">{room.title}</CardTitle>
+                  <CardDescription className="mt-2 text-orange-700">
+                    管理者ダッシュボード - 投票の進行を管理できます
+                  </CardDescription>
+                  <CardDescription className="mt-1 text-orange-600 text-xs">
+                    作成日: {new Date(room.created_at).toLocaleString("ja-JP")}
+                  </CardDescription>
+                </div>
               </div>
               <Badge className={statusColors[room.status]}>
                 {statusLabels[room.status]}
@@ -139,23 +154,34 @@ export default async function RoomPage({
           </CardHeader>
         </Card>
 
-        {/* Collecting Phase: Entry Form and List */}
+        {/* Warning about admin URL */}
+        <Card className="mb-6 border-yellow-500 bg-yellow-50">
+          <CardContent className="p-4">
+            <div className="flex items-start gap-2">
+              <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5" />
+              <div>
+                <p className="text-sm font-semibold text-yellow-900">
+                  この管理者URLは誰にも共有しないでください
+                </p>
+                <p className="text-xs text-yellow-700 mt-1">
+                  参加者には通常のURL（/admin を含まないURL）を共有してください
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Collecting Phase: Entry List */}
         {room.status === "collecting" && (
           <div className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>意見を投稿する</CardTitle>
+                <CardTitle>投稿された意見（{entries.length}件）</CardTitle>
                 <CardDescription>
-                  この議題についてあなたの意見を共有してください
+                  十分な意見が集まったら、下のボタンで意見を締め切ってください
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <EntryForm roomId={roomId} />
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="pt-6">
                 <EntryList entries={entries} />
               </CardContent>
             </Card>
@@ -167,9 +193,9 @@ export default async function RoomPage({
           <div className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>投票</CardTitle>
+                <CardTitle>投票状況</CardTitle>
                 <CardDescription>
-                  集まった意見をもとにAIが作成した選択肢から選んで投票してください
+                  参加者の投票を確認できます。十分な投票が集まったら締め切りましょう
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -228,6 +254,22 @@ export default async function RoomPage({
           </div>
         )}
 
+        {/* Admin Controls */}
+        <Card className="mt-6 border-2 border-orange-500">
+          <CardHeader>
+            <CardTitle className="text-orange-900">管理者操作</CardTitle>
+            <CardDescription>
+              投票の進行を管理します
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <AdminControls
+              roomId={roomId}
+              status={room.status}
+              entryCount={entries.length}
+            />
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
