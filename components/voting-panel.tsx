@@ -18,13 +18,19 @@ interface Poll {
 interface VotingPanelProps {
   polls: Poll[];
   userVotedPollIds: string[];
+  showRanking?: boolean;
 }
 
-export function VotingPanel({ polls, userVotedPollIds: initialVotedIds }: VotingPanelProps) {
+export function VotingPanel({ polls, userVotedPollIds: initialVotedIds, showRanking = false }: VotingPanelProps) {
   const [userIdHash, setUserIdHash] = useState<string | null>(null);
   const [votingFor, setVotingFor] = useState<string | null>(null);
   const [votedPollIds, setVotedPollIds] = useState<string[]>(initialVotedIds);
   const [error, setError] = useState<string | null>(null);
+
+  // Sort polls by vote count if showing ranking
+  const displayPolls = showRanking
+    ? [...polls].sort((a, b) => b.vote_count - a.vote_count)
+    : polls;
 
   useEffect(() => {
     generateUserIdHash().then(setUserIdHash);
@@ -81,24 +87,41 @@ export function VotingPanel({ polls, userVotedPollIds: initialVotedIds }: Voting
       )}
 
       <div className="space-y-3">
-        {polls.map((poll) => {
+        {displayPolls.map((poll, index) => {
           const isVoted = votedPollIds.includes(poll.id);
           const isVoting = votingFor === poll.id;
           const votePercentage = totalVotes > 0
             ? Math.round((poll.vote_count / totalVotes) * 100)
             : 0;
+          const rank = index + 1;
+
+          // Medal emoji for top 3
+          const getMedal = (rank: number) => {
+            if (!showRanking) return null;
+            switch (rank) {
+              case 1: return "🥇";
+              case 2: return "🥈";
+              case 3: return "🥉";
+              default: return `${rank}位`;
+            }
+          };
 
           return (
             <Card key={poll.id} className={isVoted ? "border-primary" : ""}>
               <CardHeader>
                 <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1">
-                    <CardTitle className="text-base">{poll.option_text}</CardTitle>
-                    {poll.explanation && (
-                      <CardDescription className="mt-2">
-                        {poll.explanation}
-                      </CardDescription>
+                  <div className="flex-1 flex items-start gap-3">
+                    {showRanking && (
+                      <span className="text-2xl font-bold">{getMedal(rank)}</span>
                     )}
+                    <div className="flex-1">
+                      <CardTitle className="text-base">{poll.option_text}</CardTitle>
+                      {poll.explanation && (
+                        <CardDescription className="mt-2">
+                          {poll.explanation}
+                        </CardDescription>
+                      )}
+                    </div>
                   </div>
                   <div className="flex flex-col items-end gap-2">
                     <Badge variant={isVoted ? "default" : "outline"}>

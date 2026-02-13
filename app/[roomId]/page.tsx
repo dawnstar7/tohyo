@@ -192,15 +192,47 @@ export default async function RoomPage({
         {/* Closed Phase: Show Results */}
         {room.status === "closed" && (
           <div className="space-y-6">
+            {/* Winner Announcement */}
+            {polls.length > 0 && (() => {
+              const sortedPolls = [...polls].sort((a, b) => b.vote_count - a.vote_count);
+              const winner = sortedPolls[0];
+              const totalVotes = polls.reduce((sum, p) => sum + p.vote_count, 0);
+
+              return (
+                <Card className="border-2 border-green-500 bg-green-50 dark:bg-green-950">
+                  <CardHeader>
+                    <div className="flex items-center gap-2">
+                      <span className="text-3xl">🏆</span>
+                      <CardTitle className="text-2xl">最も支持された選択肢</CardTitle>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="p-4 bg-white dark:bg-gray-800 rounded-lg">
+                      <h3 className="text-xl font-bold mb-2">{winner.option_text}</h3>
+                      <p className="text-muted-foreground mb-3">{winner.explanation}</p>
+                      <div className="flex items-center gap-4">
+                        <Badge className="bg-green-600 text-lg px-3 py-1">
+                          {winner.vote_count}票 ({totalVotes > 0 ? Math.round((winner.vote_count / totalVotes) * 100) : 0}%)
+                        </Badge>
+                        <span className="text-sm text-muted-foreground">
+                          総投票数: {totalVotes}票
+                        </span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })()}
+
             <Card>
               <CardHeader>
-                <CardTitle>投票結果</CardTitle>
+                <CardTitle>全ての投票結果（順位順）</CardTitle>
                 <CardDescription>
                   投票は締め切られました。最終結果をご覧ください。
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <VotingPanel polls={polls} userVotedPollIds={userVotedPollIds} />
+                <VotingPanel polls={polls} userVotedPollIds={userVotedPollIds} showRanking={true} />
               </CardContent>
             </Card>
 
