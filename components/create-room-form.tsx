@@ -21,6 +21,10 @@ export function CreateRoomForm() {
 
     try {
       const room = await createRoomAction(title);
+
+      // Save admin status in localStorage
+      localStorage.setItem(`room_admin_${room.id}`, "true");
+
       const url = `${window.location.origin}/${room.id}`;
       setCreatedRoomUrl(url);
       setTitle("");

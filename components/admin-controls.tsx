@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { generatePollsAction, closeVotingAction } from "@/app/actions/room";
 import { Loader2, Sparkles, Lock } from "lucide-react";
@@ -16,6 +16,13 @@ export function AdminControls({ roomId, status, entryCount }: AdminControlsProps
   const [isGenerating, setIsGenerating] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    // Check if this user is the room admin
+    const adminStatus = localStorage.getItem(`room_admin_${roomId}`);
+    setIsAdmin(adminStatus === "true");
+  }, [roomId]);
 
   const handleGeneratePolls = async () => {
     if (entryCount === 0) {
@@ -47,6 +54,10 @@ export function AdminControls({ roomId, status, entryCount }: AdminControlsProps
       setIsClosing(false);
     }
   };
+
+  if (!isAdmin) {
+    return null; // Don't show admin controls if not admin
+  }
 
   return (
     <div className="border-t pt-4 mt-4 space-y-3">
