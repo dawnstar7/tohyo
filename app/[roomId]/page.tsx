@@ -176,16 +176,6 @@ export default async function RoomPage({
                 <VotingPanel polls={polls} userVotedPollIds={userVotedPollIds} />
               </CardContent>
             </Card>
-
-            {/* Show entries for reference */}
-            <Card>
-              <CardHeader>
-                <CardTitle>投稿された意見（参考）</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <EntryList entries={entries} />
-              </CardContent>
-            </Card>
           </div>
         )}
 
@@ -199,7 +189,7 @@ export default async function RoomPage({
               const totalVotes = polls.reduce((sum, p) => sum + p.vote_count, 0);
 
               return (
-                <Card className="border-2 border-green-500 bg-green-50 dark:bg-green-950">
+                <Card className="border-2 border-green-500 bg-green-50 dark:bg-green-900/20">
                   <CardHeader>
                     <div className="flex items-center gap-2">
                       <span className="text-3xl">🏆</span>
@@ -207,14 +197,14 @@ export default async function RoomPage({
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="p-4 bg-white dark:bg-gray-800 rounded-lg">
+                    <div className="p-4 bg-white dark:bg-gray-900 rounded-lg border dark:border-gray-700">
                       <h3 className="text-xl font-bold mb-2">{winner.option_text}</h3>
-                      <p className="text-muted-foreground mb-3">{winner.explanation}</p>
+                      <p className="text-gray-600 dark:text-gray-300 mb-3">{winner.explanation}</p>
                       <div className="flex items-center gap-4">
-                        <Badge className="bg-green-600 text-lg px-3 py-1">
+                        <Badge className="bg-green-600 text-white text-lg px-3 py-1">
                           {winner.vote_count}票 ({totalVotes > 0 ? Math.round((winner.vote_count / totalVotes) * 100) : 0}%)
                         </Badge>
-                        <span className="text-sm text-muted-foreground">
+                        <span className="text-sm text-gray-600 dark:text-gray-400">
                           総投票数: {totalVotes}票
                         </span>
                       </div>
@@ -233,15 +223,6 @@ export default async function RoomPage({
               </CardHeader>
               <CardContent>
                 <VotingPanel polls={polls} userVotedPollIds={userVotedPollIds} showRanking={true} />
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>投稿された意見</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <EntryList entries={entries} />
               </CardContent>
             </Card>
           </div>
