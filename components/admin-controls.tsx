@@ -2,9 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { generatePollsAction, closeVotingAction } from "@/app/actions/room";
-import { Loader2, Sparkles, Lock } from "lucide-react";
+import { Loader2, Sparkles, Lock, Key } from "lucide-react";
 import type { RoomStatus } from "@/lib/types/database";
+import { createClient } from "@/lib/supabase/client";
 
 interface AdminControlsProps {
   roomId: string;
@@ -17,12 +19,64 @@ export function AdminControls({ roomId, status, entryCount }: AdminControlsProps
   const [isClosing, setIsClosing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [showCodeInput, setShowCodeInput] = useState(false);
+  const [inputCode, setInputCode] = useState("");
+  const [codeError, setCodeError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Check if this user is the room admin
-    const adminStatus = localStorage.getItem(`room_admin_${roomId}`);
-    setIsAdmin(adminStatus === "true");
+    // Check if this user has the admin code saved
+    const savedCode = localStorage.getItem(`room_admin_${roomId}`);
+    if (savedCode) {
+      // Verify the code is valid
+      verifyAdminCode(savedCode);
+    }
   }, [roomId]);
+
+  const verifyAdminCode = async (code: string) => {
+    try {
+      const supabase = createClient();
+      const { data: room } = await supabase
+        .from("rooms")
+        .select("admin_code")
+        .eq("id", roomId)
+        .single();
+
+      if (room && room.admin_code === code) {
+        setIsAdmin(true);
+        localStorage.setItem(`room_admin_${roomId}`, code);
+      } else {
+        setIsAdmin(false);
+        localStorage.removeItem(`room_admin_${roomId}`);
+      }
+    } catch (err) {
+      console.error("Failed to verify admin code:", err);
+      setIsAdmin(false);
+    }
+  };
+
+  const handleCodeSubmit = async () => {
+    setCodeError(null);
+
+    try {
+      const supabase = createClient();
+      const { data: room } = await supabase
+        .from("rooms")
+        .select("admin_code")
+        .eq("id", roomId)
+        .single();
+
+      if (room && room.admin_code === inputCode) {
+        setIsAdmin(true);
+        localStorage.setItem(`room_admin_${roomId}`, inputCode);
+        setShowCodeInput(false);
+        setInputCode("");
+      } else {
+        setCodeError("コードが間違っています");
+      }
+    } catch (err) {
+      setCodeError("エラーが発生しました");
+    }
+  };
 
   const handleGeneratePolls = async () => {
     if (entryCount === 0) {
@@ -56,7 +110,56 @@ export function AdminControls({ roomId, status, entryCount }: AdminControlsProps
   };
 
   if (!isAdmin) {
-    return null; // Don't show admin controls if not admin
+    return (
+      <div className="border-t pt-4 mt-4 space-y-3">
+        <h3 className="text-sm font-semibold text-muted-foreground">管理者操作</h3>
+
+        {!showCodeInput ? (
+          <Button
+            onClick={() => setShowCodeInput(true)}
+            variant="outline"
+            className="w-full"
+          >
+            <Key className="mr-2 h-4 w-4" />
+            管理者コードを入力
+          </Button>
+        ) : (
+          <div className="space-y-2">
+            <Input
+              type="text"
+              placeholder="4桁のコードを入力"
+              value={inputCode}
+              onChange={(e) => setInputCode(e.target.value)}
+              maxLength={4}
+              className="text-center text-lg tracking-widest"
+            />
+            {codeError && (
+              <p className="text-sm text-destructive">{codeError}</p>
+            )}
+            <div className="flex gap-2">
+              <Button
+                onClick={handleCodeSubmit}
+                disabled={inputCode.length !== 4}
+                className="flex-1"
+              >
+                確認
+              </Button>
+              <Button
+                onClick={() => {
+                  setShowCodeInput(false);
+                  setInputCode("");
+                  setCodeError(null);
+                }}
+                variant="outline"
+                className="flex-1"
+              >
+                キャンセル
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+    );
   }
 
   return (

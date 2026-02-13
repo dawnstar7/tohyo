@@ -11,7 +11,7 @@ export function CreateRoomForm() {
   const [title, setTitle] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [createdRoomUrl, setCreatedRoomUrl] = useState<string | null>(null);
+  const [createdRoom, setCreatedRoom] = useState<{ url: string; adminCode: string } | null>(null);
   const [copied, setCopied] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -22,11 +22,11 @@ export function CreateRoomForm() {
     try {
       const room = await createRoomAction(title);
 
-      // Save admin status in localStorage
-      localStorage.setItem(`room_admin_${room.id}`, "true");
+      // Save admin code in localStorage
+      localStorage.setItem(`room_admin_${room.id}`, room.admin_code);
 
       const url = `${window.location.origin}/${room.id}`;
-      setCreatedRoomUrl(url);
+      setCreatedRoom({ url, adminCode: room.admin_code });
       setTitle("");
     } catch (err) {
       setError(err instanceof Error ? err.message : "エラーが発生しました");
@@ -36,10 +36,10 @@ export function CreateRoomForm() {
   };
 
   const handleCopy = async () => {
-    if (!createdRoomUrl) return;
+    if (!createdRoom) return;
 
     try {
-      await navigator.clipboard.writeText(createdRoomUrl);
+      await navigator.clipboard.writeText(createdRoom.url);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
@@ -48,11 +48,11 @@ export function CreateRoomForm() {
   };
 
   const handleNewRoom = () => {
-    setCreatedRoomUrl(null);
+    setCreatedRoom(null);
     setCopied(false);
   };
 
-  if (createdRoomUrl) {
+  if (createdRoom) {
     return (
       <div className="space-y-4">
         <Card className="border-green-500 bg-green-50">
@@ -67,29 +67,48 @@ export function CreateRoomForm() {
               </div>
             </div>
 
-            <div className="flex gap-2">
-              <Input
-                value={createdRoomUrl}
-                readOnly
-                className="flex-1 bg-white"
-              />
-              <Button
-                onClick={handleCopy}
-                variant="outline"
-                size="icon"
-                className="shrink-0"
-              >
-                {copied ? (
-                  <Check className="h-4 w-4 text-green-600" />
-                ) : (
-                  <Copy className="h-4 w-4" />
-                )}
-              </Button>
+            {/* Room URL */}
+            <div>
+              <label className="text-xs font-semibold text-green-900 mb-1 block">
+                共有用URL
+              </label>
+              <div className="flex gap-2">
+                <Input
+                  value={createdRoom.url}
+                  readOnly
+                  className="flex-1 bg-white text-sm"
+                />
+                <Button
+                  onClick={handleCopy}
+                  variant="outline"
+                  size="icon"
+                  className="shrink-0"
+                >
+                  {copied ? (
+                    <Check className="h-4 w-4 text-green-600" />
+                  ) : (
+                    <Copy className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+            </div>
+
+            {/* Admin Code */}
+            <div className="p-3 bg-orange-100 border border-orange-300 rounded-lg">
+              <label className="text-xs font-semibold text-orange-900 mb-1 block">
+                🔑 管理者コード（保管してください）
+              </label>
+              <div className="text-3xl font-bold text-center text-orange-900 py-2 tracking-widest">
+                {createdRoom.adminCode}
+              </div>
+              <p className="text-xs text-orange-700 mt-2">
+                リロードしても管理できるよう、このコードを控えておいてください
+              </p>
             </div>
 
             <div className="flex gap-2">
               <Button
-                onClick={() => window.open(createdRoomUrl, "_blank")}
+                onClick={() => window.open(createdRoom.url, "_blank")}
                 className="flex-1"
               >
                 <ExternalLink className="mr-2 h-4 w-4" />
