@@ -189,22 +189,22 @@ export default async function RoomPage({
               const totalVotes = polls.reduce((sum, p) => sum + p.vote_count, 0);
 
               return (
-                <Card className="border-2 border-green-500 bg-green-50 dark:bg-green-900/20">
+                <Card className="border-2 border-green-500 bg-green-50">
                   <CardHeader>
                     <div className="flex items-center gap-2">
                       <span className="text-3xl">🏆</span>
-                      <CardTitle className="text-2xl">最も支持された選択肢</CardTitle>
+                      <CardTitle className="text-2xl text-gray-900">最も支持された選択肢</CardTitle>
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="p-4 bg-white dark:bg-gray-900 rounded-lg border dark:border-gray-700">
-                      <h3 className="text-xl font-bold mb-2">{winner.option_text}</h3>
-                      <p className="text-gray-600 dark:text-gray-300 mb-3">{winner.explanation}</p>
+                    <div className="p-4 bg-white rounded-lg border border-gray-200 shadow-sm">
+                      <h3 className="text-xl font-bold mb-2 text-gray-900">{winner.option_text}</h3>
+                      <p className="text-gray-700 mb-3">{winner.explanation}</p>
                       <div className="flex items-center gap-4">
                         <Badge className="bg-green-600 text-white text-lg px-3 py-1">
                           {winner.vote_count}票 ({totalVotes > 0 ? Math.round((winner.vote_count / totalVotes) * 100) : 0}%)
                         </Badge>
-                        <span className="text-sm text-gray-600 dark:text-gray-400">
+                        <span className="text-sm text-gray-600">
                           総投票数: {totalVotes}票
                         </span>
                       </div>
