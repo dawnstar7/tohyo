@@ -179,6 +179,17 @@ export default async function RoomPage({
           </div>
         )}
 
+        {/* Admin Controls */}
+        <Card className="mt-6">
+          <CardContent className="pt-6">
+            <AdminControls
+              roomId={roomId}
+              status={room.status}
+              entryCount={entries.length}
+            />
+          </CardContent>
+        </Card>
+
         {/* Closed Phase: Show Results */}
         {room.status === "closed" && (
           <div className="space-y-6">
