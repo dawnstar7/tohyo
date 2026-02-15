@@ -11,6 +11,7 @@ import type { Room, Entry, Poll, Vote } from "@/lib/types/database";
 
 interface PollWithVotes extends Poll {
   vote_count: number;
+  votes?: Vote[];
 }
 
 async function getRoomData(roomId: string) {
@@ -39,19 +40,21 @@ async function getRoomData(roomId: string) {
     .eq("room_id", roomId)
     .order("created_at", { ascending: true });
 
-  // Get vote counts for each poll
+  // Get vote counts and votes for each poll
   let pollsWithVotes: PollWithVotes[] = [];
   if (polls && polls.length > 0) {
     pollsWithVotes = await Promise.all(
       polls.map(async (poll) => {
-        const { count } = await supabase
+        const { data: votes, count } = await supabase
           .from("votes")
-          .select("id", { count: "exact" })
-          .eq("poll_id", poll.id);
+          .select("*", { count: "exact" })
+          .eq("poll_id", poll.id)
+          .order("created_at", { ascending: true });
 
         return {
           ...poll,
           vote_count: count || 0,
+          votes: (votes || []) as Vote[],
         };
       })
     );

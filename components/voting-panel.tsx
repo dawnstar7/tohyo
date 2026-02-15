@@ -4,15 +4,25 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { submitVoteAction } from "@/app/actions/room";
 import { generateUserIdHash } from "@/lib/utils/hash";
-import { Check, Loader2 } from "lucide-react";
+import { Check, Loader2, MessageSquare } from "lucide-react";
+
+interface Vote {
+  id: string;
+  nickname: string | null;
+  comment: string | null;
+  created_at: string;
+}
 
 interface Poll {
   id: string;
   option_text: string;
   explanation: string | null;
   vote_count: number;
+  votes?: Vote[];
 }
 
 interface VotingPanelProps {
@@ -26,6 +36,9 @@ export function VotingPanel({ polls, userVotedPollIds: initialVotedIds, showRank
   const [votingFor, setVotingFor] = useState<string | null>(null);
   const [votedPollIds, setVotedPollIds] = useState<string[]>(initialVotedIds);
   const [error, setError] = useState<string | null>(null);
+  const [showCommentForm, setShowCommentForm] = useState<string | null>(null);
+  const [nickname, setNickname] = useState("");
+  const [comment, setComment] = useState("");
 
   // Sort polls by vote count if showing ranking
   const displayPolls = showRanking
@@ -51,8 +64,11 @@ export function VotingPanel({ polls, userVotedPollIds: initialVotedIds, showRank
     setVotingFor(pollId);
 
     try {
-      await submitVoteAction(pollId, userIdHash);
+      await submitVoteAction(pollId, userIdHash, nickname || undefined, comment || undefined);
       setVotedPollIds([...votedPollIds, pollId]);
+      setShowCommentForm(null);
+      setNickname("");
+      setComment("");
     } catch (err) {
       setError(err instanceof Error ? err.message : "投票に失敗しました");
     } finally {
@@ -146,22 +162,99 @@ export function VotingPanel({ polls, userVotedPollIds: initialVotedIds, showRank
                     />
                   </div>
 
-                  {!isVoted && (
+                  {!isVoted && showCommentForm !== poll.id && (
                     <Button
-                      onClick={() => handleVote(poll.id)}
+                      onClick={() => setShowCommentForm(poll.id)}
                       disabled={isVoting || !userIdHash}
                       className="w-full"
                       variant="outline"
                     >
-                      {isVoting ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          投票中...
-                        </>
-                      ) : (
-                        "この選択肢に投票する"
-                      )}
+                      <MessageSquare className="mr-2 h-4 w-4" />
+                      この選択肢に投票する
                     </Button>
+                  )}
+
+                  {!isVoted && showCommentForm === poll.id && (
+                    <div className="space-y-3 pt-2">
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">
+                          ニックネーム（任意）
+                        </label>
+                        <Input
+                          placeholder="例: たけし"
+                          value={nickname}
+                          onChange={(e) => setNickname(e.target.value)}
+                          maxLength={20}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">
+                          投票理由・コメント（任意）
+                        </label>
+                        <Textarea
+                          placeholder="例: みんなで楽しめそう！"
+                          value={comment}
+                          onChange={(e) => setComment(e.target.value)}
+                          maxLength={200}
+                          rows={3}
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={() => handleVote(poll.id)}
+                          disabled={isVoting}
+                          className="flex-1"
+                        >
+                          {isVoting ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              投票中...
+                            </>
+                          ) : (
+                            <>
+                              <Check className="mr-2 h-4 w-4" />
+                              投票する
+                            </>
+                          )}
+                        </Button>
+                        <Button
+                          onClick={() => {
+                            setShowCommentForm(null);
+                            setNickname("");
+                            setComment("");
+                          }}
+                          variant="outline"
+                        >
+                          キャンセル
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Show comments from voters */}
+                  {poll.votes && poll.votes.length > 0 && (
+                    <div className="mt-4 pt-4 border-t space-y-2">
+                      <h4 className="text-sm font-semibold text-muted-foreground">
+                        投票した人のコメント ({poll.votes.filter(v => v.nickname || v.comment).length})
+                      </h4>
+                      {poll.votes
+                        .filter((vote) => vote.nickname || vote.comment)
+                        .map((vote) => (
+                          <div
+                            key={vote.id}
+                            className="bg-muted/50 rounded-lg p-3 space-y-1"
+                          >
+                            {vote.nickname && (
+                              <p className="text-sm font-medium">{vote.nickname}</p>
+                            )}
+                            {vote.comment && (
+                              <p className="text-sm text-muted-foreground">
+                                {vote.comment}
+                              </p>
+                            )}
+                          </div>
+                        ))}
+                    </div>
                   )}
                 </div>
               </CardContent>

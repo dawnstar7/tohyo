@@ -30,6 +30,8 @@ export interface Vote {
   id: string;
   poll_id: string;
   user_id_hash: string;
+  nickname: string | null;
+  comment: string | null;
   created_at: string;
 }
 
@@ -42,7 +44,10 @@ export type EntryInsert = Omit<Entry, 'id' | 'created_at'>;
 
 export type PollInsert = Omit<Poll, 'id' | 'created_at'>;
 
-export type VoteInsert = Omit<Vote, 'id' | 'created_at'>;
+export type VoteInsert = Omit<Vote, 'id' | 'created_at'> & {
+  nickname?: string | null;
+  comment?: string | null;
+};
 
 // Update types (all fields optional except id)
 export type RoomUpdate = Partial<Omit<Room, 'id' | 'created_at' | 'updated_at'>>;

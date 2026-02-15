@@ -138,7 +138,9 @@ export async function generatePollsAction(roomId: string) {
  */
 export async function submitVoteAction(
   pollId: string,
-  userIdHash: string
+  userIdHash: string,
+  nickname?: string,
+  comment?: string
 ) {
   const supabase = await createClient();
 
@@ -157,6 +159,8 @@ export async function submitVoteAction(
   const voteData: VoteInsert = {
     poll_id: pollId,
     user_id_hash: userIdHash,
+    nickname: nickname?.trim() || null,
+    comment: comment?.trim() || null,
   };
 
   const { data, error } = await supabase
